@@ -6,12 +6,21 @@ from textwrap import dedent
 from typing import Callable, Iterator, Literal
 
 from funcgpt.gpt import answer, stream
+from funcgpt.tokentools import get_token_count
+
+MAX_TOKENS = {
+    "gpt-3.5-turbo": 4096,
+    "gpt-4": 8192,
+}
+
+DEFAULT_PROMPT_TOKENS_SHARE = 0.875  # 7/8
 
 
 def create_generic_wrapper(
     f: Callable,
     model: Literal["gpt-3.5-turbo", "gpt-4"],
     temperature: int,
+    max_tokens: int | None = None,
 ) -> Callable[[str], str | Iterator[str]]:
     """
     Create a generic wrapper for a callable (typically a function) to generate response
@@ -23,6 +32,9 @@ def create_generic_wrapper(
     :param temperature: The temperature value to use for generating the responses.
                         Lower values make the responses more focused and deterministic,
                         while higher values make them more diverse.
+    :param max_tokens: The maximum number of tokens for the input prompt. If not provided,
+                        the maximum number of tokens will be determined based on the model
+                        and the default prompt tokens share.
 
     :return: A wrapped callable that generates responses according to the specifications
              and instructions provided in the function docstring.
@@ -71,15 +83,25 @@ def create_generic_wrapper(
     else:
         systemRole = "system"
 
+    # Determine the maximum number of tokens for the input prompt
+    if max_tokens is None:
+        max_tokens = int(MAX_TOKENS[model] * DEFAULT_PROMPT_TOKENS_SHARE)
+
     # Create the wrapper function
     @wraps(f)
     def wrapper(message: str) -> str | Iterator[str]:
+        messages = [
+            {"role": systemRole, "content": instructions},
+            {"role": "user", "content": message},
+        ]
+        message_tokens_count = get_token_count(messages=messages, model=model)
+        if message_tokens_count > max_tokens:
+            raise ValueError(
+                f"Message exceeds maximum number of tokens ({message_tokens_count} > {max_tokens})"
+            )
         return engine(
             model=model,
-            messages=[
-                {"role": systemRole, "content": instructions},
-                {"role": "user", "content": message},
-            ],
+            messages=messages,
             temperature=temperature,
         )
 

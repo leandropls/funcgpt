@@ -1,10 +1,11 @@
 import re
 from codecs import getreader
 from json import dumps, loads
-from typing import IO, Iterator, Literal, TypedDict, cast
+from typing import IO, Iterator, Literal, cast
 from urllib.request import Request, urlopen
 
 from funcgpt.credentials import OPENAI_API_KEY, OPENAI_ORG_ID
+from funcgpt.message import Message
 
 DEFAULT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 
@@ -21,19 +22,6 @@ match_data = re.compile(r"^data: (.*)(?:\r\n|\r|\n)$").match
 match_empty_line = re.compile(r"^(?:\r\n|\r|\n)$").match
 
 utf8reader = getreader("utf-8")
-
-
-class Message(TypedDict):
-    """
-    A message sent or received by the assistant.
-
-    :param role: The role of the message sender or receiver. Can be "system",
-                 "user" or "assistant".
-    :param content: The text content of the message.
-    """
-
-    role: Literal["system", "user", "assistant"]
-    content: str
 
 
 def stream(
@@ -134,6 +122,7 @@ def answer(
                  generating further tokens. Default is None.
     :param chat_completions_url: The URL endpoint for fetching chat completions. The default value
                                  is DEFAULT_COMPLETIONS_URL.
+    :raises OverflowError: Raised if the model's response exceeds the maximum length.
     :return: The assistant's generated response as a string.
     """
     # Prepare request payload with model, messages, and temperature
@@ -160,5 +149,11 @@ def answer(
     # Parse the response JSON
     body = loads(response.read())
 
+    # Get the first choice
+    choice = body["choices"][0]
+
+    if choice["finish_reason"] == "length":
+        raise OverflowError("The model's response exceeded the maximum length.")
+
     # Extract and return the assistant's response
-    return body["choices"][0]["message"]["content"]
+    return choice["message"]["content"]

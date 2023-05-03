@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "funcgpt"
-version = "1.0.1"
+version = "1.1.0"
 authors = [
   { name="Leandro Pereira de Lima e Silva", email="leandro@lls-software.com" },
 ]
@@ -22,6 +22,9 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Utilities",
 ]
+dependencies = [
+  "tiktoken>=0.3.3",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/leandropls/funcgpt"
@@ -33,3 +36,6 @@ multi_line_output = 3
 
 [tool.black]
 line-length = 100
+
+[tool.setuptools.package-data]
+funcgpt = ["data/*"]
