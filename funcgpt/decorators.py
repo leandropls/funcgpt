@@ -33,4 +33,6 @@ def gpt(
             f=f, model=model, temperature=temperature, max_tokens=max_tokens
         )
     else:
-        return gpt
+        return lambda f_: create_generic_wrapper(
+            f_, model=model, temperature=temperature, max_tokens=max_tokens
+        )
