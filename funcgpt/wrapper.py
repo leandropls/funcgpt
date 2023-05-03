@@ -51,7 +51,7 @@ def create_generic_wrapper(
             in answer(*args, **kwargs, stop=["true", "false"]).lower()
         )
     else:
-        raise ValueError("Function must have a return annotation of str or Iterator[str]")
+        raise ValueError("Function must have a return annotation of str, Iterator[str], or bool")
 
     # Create the instructions for the GPT engine
     instructions = "You should answer to inputs according to the following specification:\n\n"
